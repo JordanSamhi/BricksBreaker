@@ -19,6 +19,15 @@ class Case():
     def getY(self):
         return self._y
     
+    def setX(self, x):
+        self._x = x
+        
+    def setY(self, y):
+        self._y = y
+    
+    def setCouleur(self, couleur):
+        self._couleur = couleur
+    
     def getNord(self):
         if self.getY() > 0:
             return self._grille[self._y-1][self._x]
@@ -40,15 +49,13 @@ class Case():
         return None
         
     def getVoisins(self):
-        voisins = []
-        voisins.append(self.getNord())
-        voisins.append(self.getSud())
-        voisins.append(self.getEst())
-        voisins.append(self.getOuest())
-        return voisins
+        return [self.getNord(), self.getSud(), self.getEst(), self.getOuest()]
     
     def surbrillance(self):
         self._couleur = self._couleur[:-1] + "2"
     
     def couleurParDefaut(self):
         self._couleur = self._couleur[:-1] + "3" 
+        
+    def estMorte(self):
+        return self._couleur == "grey"

@@ -30,3 +30,6 @@ class ListeCouleurs():
         if self._compteursCouleurs[couleur] == self.getLimiteCouleur():
             self._listeCouleurs = [coul for coul in self._listeCouleurs if coul != couleur]
         return couleur
+
+    def getCouleurCaseMorte(self):
+        return "grey"

@@ -1,5 +1,5 @@
 '''
-    Une partie est définie par une liste de case et un score
+    Une partie est definie par une liste de case et un score
 '''
 class Partie():
     def __init__(self, grille):
@@ -15,4 +15,16 @@ class Partie():
 
     def getScorePotentiel(self):
         return self._scorePotentiel
+    
+    def setGrille(self, grille):
+        self._grille = grille
+    
+    def getGrilleEnListe(self):
+        return self.transformerGrilleEnListe()
 
+    def transformerGrilleEnListe(self):
+        l = []
+        for i in self._grille:
+            for elt in i:
+                l.append(elt)
+        return l
