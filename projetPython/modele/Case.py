@@ -9,6 +9,7 @@ class Case():
         self._y = y
         self._couleur = couleur
         self._grille = grille
+        self.GREY = "grey"
         
     def getCouleur(self):
         return self._couleur
@@ -57,5 +58,8 @@ class Case():
     def couleurParDefaut(self):
         self._couleur = self._couleur[:-1] + "3" 
         
-    def estMorte(self):
-        return self._couleur == "grey"
+    def detruire(self):
+        self.setCouleur(self.GREY)
+        
+    def estDetruite(self):
+        return self._couleur == self.GREY

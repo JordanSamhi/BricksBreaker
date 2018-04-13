@@ -6,6 +6,7 @@ class Partie():
         self._grille = grille
         self._score = 0
         self._scorePotentiel = 0
+        self._casesModifiees = []
         
     def getGrille(self):
         return self._grille
@@ -18,6 +19,12 @@ class Partie():
     
     def setGrille(self, grille):
         self._grille = grille
+        
+    def getCasesModifiees(self):
+        return self._casesModifiees
+    
+    def setCasesModifiees(self, casesModifiees):
+        self._casesModifiees = casesModifiees
     
     def getGrilleEnListe(self):
         return self.transformerGrilleEnListe()
@@ -28,3 +35,5 @@ class Partie():
             for elt in i:
                 l.append(elt)
         return l
+    
+    
