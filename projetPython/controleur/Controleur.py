@@ -4,6 +4,7 @@
 from modele.Case import Case
 import random as r
 from modele.Partie import Partie
+from vue.PopupNouvellePartie import PopupNouvellePartie
 
 class Controleur():
     def __init__(self, application):
@@ -91,8 +92,9 @@ class Controleur():
             for case in self._semblables:
                 case.detruire()
         self.gravite()  
-            
+        
     def gravite(self):
+        #TODO desactiver clic dans gris
         ''' Recuperation des colonnes concernees '''
         listeColonnes = []
         for case in self._semblables:
@@ -107,7 +109,7 @@ class Controleur():
             for i in range(self._tailleGrille - 1, -1, -1):
                 ''' Debut traitement de chaque colonne '''
                 case =  self._application.getPartie().getGrille()[i][col]
-                if nouveauBas == None and self._application.getPartie().getGrille()[i][col].getNord().estDetruite():
+                if nouveauBas == None and case.getNord() and case.getNord().estDetruite() and not casesDetruites :
                     nouveauBas = case
                 if case.estDetruite():
                     casesDetruites.append(case)
@@ -116,6 +118,8 @@ class Controleur():
             for i in range(len(casesDetruites)):
                 casesDetruites[i].setY(i)
                 self._application.getPartie().getGrille()[casesDetruites[i].getY()][casesDetruites[i].getX()] = casesDetruites[i]
+            if not nouveauBas:
+                nouveauBas = Case(col, self._tailleGrille, None, None)
             for case in casesADescendre:
                 case.setY(nouveauBas.getY() - 1)
                 self._application.getPartie().getGrille()[case.getY()][case.getX()] = case

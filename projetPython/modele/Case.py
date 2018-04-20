@@ -52,6 +52,9 @@ class Case():
     def getVoisins(self):
         return [self.getNord(), self.getSud(), self.getEst(), self.getOuest()]
     
+    def getGrille(self):
+        return self._grille
+    
     def surbrillance(self):
         self._couleur = self._couleur[:-1] + "2"
     
