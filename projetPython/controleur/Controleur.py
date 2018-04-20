@@ -4,7 +4,6 @@
 from modele.Case import Case
 import random as r
 from modele.Partie import Partie
-from vue.PopupNouvellePartie import PopupNouvellePartie
 
 class Controleur():
     def __init__(self, application):
@@ -78,7 +77,8 @@ class Controleur():
                         case.surbrillance()
                 self._application.getPartie().setCasesModifiees(self._semblables)
                 self._application.update()
-                
+        else:
+            self.desactiverSurbrillance()
     def isPartieFinie(self):
         for case in self._application.getPartie().getGrilleEnListe():
             if not case.estDetruite():
@@ -94,7 +94,6 @@ class Controleur():
         self.gravite()  
         
     def gravite(self):
-        #TODO desactiver clic dans gris
         ''' Recuperation des colonnes concernees '''
         listeColonnes = []
         for case in self._semblables:
@@ -109,17 +108,25 @@ class Controleur():
             for i in range(self._tailleGrille - 1, -1, -1):
                 ''' Debut traitement de chaque colonne '''
                 case =  self._application.getPartie().getGrille()[i][col]
-                if nouveauBas == None and case.getNord() and case.getNord().estDetruite() and not casesDetruites :
+                '''
+                    Pour etre nouveau bas, la case doit avoir une case sur elle qui est detruite,
+                    Il ne doit pas y avoir de cases deja detruites dans la liste, sinon il peut y en avoir en dessous,
+                    Et bien sur la case elle meme ne doit pas etre detruite
+                '''
+                if nouveauBas == None and case.getNord() and case.getNord().estDetruite() and not casesDetruites and not case.estDetruite():
                     nouveauBas = case
                 if case.estDetruite():
                     casesDetruites.append(case)
                 elif not case.estDetruite() and casesDetruites:
                     casesADescendre.append(case)
+            ''' S'il n'y a pas de nouveau bas, alors on est tout en bas, le nouveau bas est "virtuel" en dessous du bas '''
+            if not nouveauBas:
+                nouveauBas = Case(col, self._tailleGrille, None, None)
+            ''' On monte les cases detruites '''
             for i in range(len(casesDetruites)):
                 casesDetruites[i].setY(i)
                 self._application.getPartie().getGrille()[casesDetruites[i].getY()][casesDetruites[i].getX()] = casesDetruites[i]
-            if not nouveauBas:
-                nouveauBas = Case(col, self._tailleGrille, None, None)
+            ''' On descend les cases a descendre '''
             for case in casesADescendre:
                 case.setY(nouveauBas.getY() - 1)
                 self._application.getPartie().getGrille()[case.getY()][case.getX()] = case
@@ -127,4 +134,29 @@ class Controleur():
             casesAModifier += casesDetruites + casesADescendre
         self._application.getPartie().setCasesModifiees(casesAModifier)
         self._application.update()
+        self.laGifle()
     
+    ''' Decalage gauche '''
+    def laGifle(self):
+        indiceBas = self._tailleGrille - 1
+        case = None
+        for i in range(self._tailleGrille):
+            case = self._application.getPartie().getGrille()[indiceBas][i]
+            caseTmp = case
+            ''' Si colonne vide '''
+            if case.estDetruite():
+                indiceDecalage = 1
+                while caseTmp.getEst() and caseTmp.getEst().estDetruite():
+                    indiceDecalage += 1
+                    caseTmp = case.getEst()
+                print(indiceDecalage)
+                break
+        ''' Ici la case contient celle du bas de la colonne a decaler '''
+        ''' On se position sur la prochaine colonne non detruite a decaler '''
+        while case.getEst() and case.estDetruite():
+            case = case.getEst()
+        ''' Ici on opere le decalage '''
+        while not case.estDetruite() and case.getX() != self._tailleGrille:
+            indiceColonne = case.getX()
+            print(indiceColonne)
+            case = case.getEst()
