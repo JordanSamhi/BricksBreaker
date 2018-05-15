@@ -8,6 +8,7 @@ class Application(tk.Tk):
         tk.Tk.__init__(self)
         self.title("Projet Python")
         self.geometry("500x400")
+        self.resizable(width=False, height=False)
         self._canvas = None
         self._frame = None
         self._canvasFinPartie = None
@@ -21,11 +22,11 @@ class Application(tk.Tk):
         self.genererPanneauDroite()
         
     def genererCanevas(self):
-        self._canvas = tk.Canvas(self, width = self.getHeight(), height = self.getHeight(), bd=0, highlightthickness=0)
+        self._canvas = tk.Canvas(self, bd=0, highlightthickness=0)
         self._canvas.grid(row=0, column=0)
         
     def genererPanneauDroite(self):
-        self._frame = tk.Frame(self, borderwidth=2, relief=tk.GROOVE, width = self.getWidth() - self.getHeight(), height = self.getHeight())
+        self._frame = tk.Frame(self, borderwidth=2, relief=tk.GROOVE)
         self._frame.grid(row=0, column=1)
         
     def genererMenu(self):
@@ -53,9 +54,9 @@ class Application(tk.Tk):
        
     def genererEvenements(self):
         self.bind("<Configure>", self.updateTailleCanvas)
-        self.bind("<Motion>", self.surbrillanceCases)
-        self.bind("<Leave>", self.desactiverSurbrillance)
-        self.bind("<Button-1>", self.detruireCases)
+        self._canvas.bind("<Motion>", self.surbrillanceCases)
+        self._canvas.bind("<Leave>", self.desactiverSurbrillance)
+        self._canvas.bind("<Button-1>", self.detruireCases)
         
     def surbrillanceCases(self, event):
         self._controleur.surbrillanceCases(event)
