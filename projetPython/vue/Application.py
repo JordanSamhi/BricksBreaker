@@ -7,12 +7,12 @@ class Application(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         self.title("Projet Python")
-        self.geometry("500x400")
-        self.resizable(width=False, height=False)
+        self.minsize(width=550, height=400)
         self._canvas = None
         self._frame = None
         self._canvasFinPartie = None
         self._partie = None
+        self._score, self._scorePotentiel = None, None
         self._controleur = Controleur(self)
         self.genererInterface()
 
@@ -22,12 +22,19 @@ class Application(tk.Tk):
         self.genererPanneauDroite()
         
     def genererCanevas(self):
-        self._canvas = tk.Canvas(self, bd=0, highlightthickness=0)
+        self._canvas = tk.Canvas(self, bd=0, highlightthickness=0, relief=tk.GROOVE, width = self.getWidthCanevas(), height = self.getHeightCanevas())
         self._canvas.grid(row=0, column=0)
         
     def genererPanneauDroite(self):
-        self._frame = tk.Frame(self, borderwidth=2, relief=tk.GROOVE)
+        self._frame = tk.Frame(self, borderwidth=2, relief=tk.GROOVE, width = self.getWidthFrame(), height = self.getHeightFrame())
         self._frame.grid(row=0, column=1)
+        
+    def genererScore(self):
+        self._score, self._scorePotentiel = tk.IntVar(), tk.IntVar()
+        tk.Label(self._frame, text="Score", font='Helvetica 15 bold').pack()
+        tk.Label(self._frame, textvariable=self._score, font='Helvetica 15 bold').pack()
+        tk.Label(self._frame, text="Score Potentiel", font='Helvetica 15 bold').pack()
+        tk.Label(self._frame, textvariable=self._scorePotentiel, font='Helvetica 15 bold').pack()
         
     def genererMenu(self):
         barreMenu = tk.Menu(self)
@@ -44,10 +51,17 @@ class Application(tk.Tk):
         messagebox.showinfo("Numeros Anonymat", "17820006\n17820034")
         
     def nouvellePartie(self):
+        self.desactiverEvenements()
         if self._canvasFinPartie:
             self._canvasFinPartie.destroy()
+            self._canvasFinPartie = None
         popup = PopupNouvellePartie(self._controleur)
         self.wait_window(popup.getToplevel())
+        if self._score:
+            self._score.set(0)
+            self._scorePotentiel.set(0)
+        else:
+            self.genererScore()
         self.genererEvenements()
         self.dessiner(self._partie.getGrilleEnListe())
         self.gererFinPartie()
@@ -57,6 +71,11 @@ class Application(tk.Tk):
         self._canvas.bind("<Motion>", self.surbrillanceCases)
         self._canvas.bind("<Leave>", self.desactiverSurbrillance)
         self._canvas.bind("<Button-1>", self.detruireCases)
+        
+    def desactiverEvenements(self):
+        self._canvas.unbind("<Button-1>")
+        self._canvas.unbind("<Motion>")
+        self._canvas.unbind("<Leave>")
         
     def surbrillanceCases(self, event):
         self._controleur.surbrillanceCases(event)
@@ -70,28 +89,28 @@ class Application(tk.Tk):
     
     def gererFinPartie(self):
         if self._controleur.isPartieFinie():
-            self.unbind("<Button-1>")
             self.afficherMessageFinPartie()
     
     def afficherMessageFinPartie(self):
-        self._canvasFinPartie = tk.Canvas(self._canvas, width=self.winfo_width(), height=self.winfo_height()/4, background="navajo white")
-        self._canvasFinPartie.create_text(75, 60, text="Cible", font="Arial 16 italic", fill="blue")
+        self._canvasFinPartie = tk.Canvas(self._canvas, width=self.getWidthCanevas(), height=self.getHeightCanevas()/4, background="navajo white")
+        self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/4, text="Partie terminee !", font="Arial 16 italic", fill="blue")
+        self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/2, text="Score : "+str(self._score.get()), font="Arial 16 italic", fill="blue")
         self._canvasFinPartie.pack()
-        self._canvasFinPartie.place(x=0, y=(self.winfo_height() - self.winfo_height()/4) / 2)
+        self._canvasFinPartie.place(x=0, y=(self.getHeightCanevas() - self.getHeightCanevas()/4) / 2)
         
     def dessiner(self, listeCases):
         if listeCases:
-            self._taille_height = self._controleur.calculerTaillesCases(self.getHeight())
+            self._taille_height, self._taille_width = self._controleur.calculerTaillesCases(self.getHeightCanevas(), self.getWidthCanevas())
             for case in listeCases:
                 self.creerRectangle(case)
             
     def creerRectangle(self, case):
-        self._canvas.create_rectangle(case.getX() * self._taille_height, case.getY() * self._taille_height,
-             (case.getX()+1) * self._taille_height, (case.getY()+1) * self._taille_height, fill=case.getCouleur())
+        self._canvas.create_rectangle(case.getX() * self.getWidthCase(), case.getY() * self.getHeightCase(),
+             (case.getX()+1) * self.getWidthCase(), (case.getY()+1) * self.getHeightCase(), fill=case.getCouleur())
         
     def updateTailleCanvas(self, _):
-        self._canvas.configure(width = self.winfo_height(), height = self.winfo_height())
-        self._frame.config(width = self.getWidth() - self.getHeight(), height = self.getHeight())
+        self._canvas.configure(width = self.getWidthCanevas(), height = self.getHeightCanevas())
+        self._frame.config(width = self.getWidthFrame(), height = self.getHeightFrame())
         if self._canvasFinPartie:
             self._canvasFinPartie.configure(width = self.winfo_width(), height = self.winfo_height() / 4)
             self._canvasFinPartie.place(x=0,y=(self.winfo_height() - self.winfo_height() / 4) / 2)
@@ -99,6 +118,8 @@ class Application(tk.Tk):
             
     def update(self):
         self.dessiner(self._partie.getCasesModifiees())
+        self._score.set(self._partie.getScore())
+        self._scorePotentiel.set(self._partie.getScorePotentiel())
         
     def getWidth(self):
         return self.winfo_width()
@@ -113,10 +134,24 @@ class Application(tk.Tk):
         self._partie = partie
         
     def getWidthCase(self):
-        return self._taille_height
+        return self._taille_width
     
     def getHeightCase(self):
         return self._taille_height
+    
+    def getHeightCanevas(self):
+        return self.getHeight()
+    
+    ''' 70% de la largeur de la fenetre '''
+    def getWidthCanevas(self):
+        return self.getWidth() * 0.7
+    
+    def getHeightFrame(self):
+        return self.getHeight()
+    
+    ''' 30% de la largeur '''
+    def getWidthFrame(self):
+        return self.getWidth() * 0.3
     
 if __name__ == "__main__":
     app = Application()

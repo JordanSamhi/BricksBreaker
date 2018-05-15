@@ -33,8 +33,8 @@ class Controleur():
         self._application.setPartie(Partie(grille))
         self._tailleGrille = taille
         
-    def calculerTaillesCases(self, height):
-        return (height / self._tailleGrille)
+    def calculerTaillesCases(self, height, width):
+        return (height / self._tailleGrille),(width / self._tailleGrille)
                 
     def getSemblablesCase(self, case, voisinsVisites):
         voisins = [v for v in case.getVoisins() if v is not None and v not in voisinsVisites and v.getCouleur() == case.getCouleur()]
@@ -50,6 +50,7 @@ class Controleur():
             if not case.estDetruite():
                 case.couleurParDefaut()
         self._application.getPartie().setCasesModifiees(self._semblables)
+        self._application.getPartie().setScorePotentiel(0)
         self._application.update()
         '''re-initialisation de la liste des semblable'''
         self._semblables = []
@@ -75,7 +76,7 @@ class Controleur():
                 if len(self._semblables) >= self.LIMITE_NOMBRE_CASES:
                     for case in self._semblables:
                         case.surbrillance()
-                self._application.getPartie().setScorePotentiel(len(self._semblables))
+                        self._application.getPartie().setScorePotentiel(len(self._semblables))
                 self._application.getPartie().setCasesModifiees(self._semblables)
                 self._application.update()
         else:
@@ -85,7 +86,7 @@ class Controleur():
         for case in self._application.getPartie().getGrilleEnListe():
             if not case.estDetruite():
                 semblables = self.getSemblablesCase(case, [case])
-                if len(semblables) >= 3:
+                if len(semblables) >= self.LIMITE_NOMBRE_CASES:
                     return False
         return True
     
