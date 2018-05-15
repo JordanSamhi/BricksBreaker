@@ -33,8 +33,8 @@ class Controleur():
         self._application.setPartie(Partie(grille))
         self._tailleGrille = taille
         
-    def calculerTaillesCases(self, width, height):
-        return (width / self._tailleGrille), (height / self._tailleGrille)
+    def calculerTaillesCases(self, height):
+        return (height / self._tailleGrille)
                 
     def getSemblablesCase(self, case, voisinsVisites):
         voisins = [v for v in case.getVoisins() if v is not None and v not in voisinsVisites and v.getCouleur() == case.getCouleur()]
@@ -75,10 +75,12 @@ class Controleur():
                 if len(self._semblables) >= self.LIMITE_NOMBRE_CASES:
                     for case in self._semblables:
                         case.surbrillance()
+                self._application.getPartie().setScorePotentiel(len(self._semblables))
                 self._application.getPartie().setCasesModifiees(self._semblables)
                 self._application.update()
         else:
             self.desactiverSurbrillance()
+            
     def isPartieFinie(self):
         for case in self._application.getPartie().getGrilleEnListe():
             if not case.estDetruite():
@@ -91,7 +93,8 @@ class Controleur():
         if len(self._semblables) >= self.LIMITE_NOMBRE_CASES:
             for case in self._semblables:
                 case.detruire()
-        self.gravite()  
+            self._application.getPartie().ajouerScore(len(self._semblables))
+            self.gravite()  
         
     def gravite(self):
         ''' Recuperation des colonnes concernees '''
@@ -134,29 +137,46 @@ class Controleur():
             casesAModifier += casesDetruites + casesADescendre
         self._application.getPartie().setCasesModifiees(casesAModifier)
         self._application.update()
-        self.laGifle()
+        self.decalageGauche()
     
     ''' Decalage gauche '''
-    def laGifle(self):
-        indiceBas = self._tailleGrille - 1
-        case = None
-        for i in range(self._tailleGrille):
-            case = self._application.getPartie().getGrille()[indiceBas][i]
-            caseTmp = case
-            ''' Si colonne vide '''
-            if case.estDetruite():
-                indiceDecalage = 1
-                while caseTmp.getEst() and caseTmp.getEst().estDetruite():
+    def decalageGauche(self):
+        while self._application.getPartie().grillePeutDecalerAGauche():
+            case = None
+            newCase = None
+            oldCase = None
+            indiceDecalage = 0
+            peutDecaler = False
+            casesAModifier = []
+            ligneBasGrille = self._application.getPartie().getGrille()[self._tailleGrille - 1]            
+            for i in range(self._tailleGrille):
+                case = ligneBasGrille[i]
+                ''' Si colonne vide '''
+                if case.estDetruite():
                     indiceDecalage += 1
-                    caseTmp = case.getEst()
-                print(indiceDecalage)
-                break
-        ''' Ici la case contient celle du bas de la colonne a decaler '''
-        ''' On se position sur la prochaine colonne non detruite a decaler '''
-        while case.getEst() and case.estDetruite():
-            case = case.getEst()
-        ''' Ici on opere le decalage '''
-        while not case.estDetruite() and case.getX() != self._tailleGrille:
-            indiceColonne = case.getX()
-            print(indiceColonne)
-            case = case.getEst()
+                    while case.getEst() and case.getEst().estDetruite():
+                        indiceDecalage += 1
+                        case = case.getEst()
+                    break
+            ''' Ici la case contient celle du bas de la colonne a decaler '''
+            ''' On se position sur la prochaine colonne non detruite a decaler '''
+            while case.getEst() and case.estDetruite():
+                case = case.getEst()
+                peutDecaler = True
+            ''' Ici on opere le decalage '''
+            if indiceDecalage != 0 and peutDecaler:
+                for col in range(case.getX(), self._tailleGrille):
+                    for i in range(self._tailleGrille):
+                        newCase = self._application.getPartie().getGrille()[i][col]
+                        if not newCase.estDetruite():
+                            oldCase = self._application.getPartie().getGrille()[i][col - indiceDecalage]
+                            if oldCase not in casesAModifier:
+                                casesAModifier.append(oldCase)
+                            if newCase not in casesAModifier:
+                                casesAModifier.append(newCase)
+                            newCase.setX(oldCase.getX())
+                            oldCase.setX(col)
+                            self._application.getPartie().getGrille()[i][col - indiceDecalage] = newCase
+                            self._application.getPartie().getGrille()[i][col] = oldCase
+            self._application.getPartie().setCasesModifiees(casesAModifier)
+            self._application.update()

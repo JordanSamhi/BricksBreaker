@@ -17,6 +17,15 @@ class Partie():
     def getScorePotentiel(self):
         return self._scorePotentiel
     
+    def setScore(self, newScore):
+        self._score = newScore
+    
+    def setScorePotentiel(self, newScorePotentiel):
+        self._scorePotentiel = newScorePotentiel
+        
+    def ajouerScore(self, scoreEnPlus):
+        self._score += scoreEnPlus
+    
     def setGrille(self, grille):
         self._grille = grille
         
@@ -35,5 +44,16 @@ class Partie():
             for elt in i:
                 l.append(elt)
         return l
+    
+    def grillePeutDecalerAGauche(self):
+        for i in range(len(self._grille)):
+            case = self._grille[len(self._grille) - 1][i] 
+            if case.estDetruite():
+                while case.getEst():
+                    case = case.getEst()
+                    if not case.estDetruite():
+                        return True
+        return False
+            
     
     

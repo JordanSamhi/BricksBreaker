@@ -7,18 +7,26 @@ class Application(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         self.title("Projet Python")
-        self.geometry("400x400")
+        self.geometry("500x400")
         self._canvas = None
+        self._frame = None
         self._canvasFinPartie = None
-        self.genererMenu()
-        self.genererCanevas()
         self._partie = None
         self._controleur = Controleur(self)
+        self.genererInterface()
+
+    def genererInterface(self):
+        self.genererMenu()
+        self.genererCanevas()
+        self.genererPanneauDroite()
         
     def genererCanevas(self):
-        self.update_idletasks()
-        self._canvas = tk.Canvas(self, width = self.getWidth(), height = self.getHeight(), bd=0, highlightthickness=0)
-        self._canvas.pack()
+        self._canvas = tk.Canvas(self, width = self.getHeight(), height = self.getHeight(), bd=0, highlightthickness=0)
+        self._canvas.grid(row=0, column=0)
+        
+    def genererPanneauDroite(self):
+        self._frame = tk.Frame(self, borderwidth=2, relief=tk.GROOVE, width = self.getWidth() - self.getHeight(), height = self.getHeight())
+        self._frame.grid(row=0, column=1)
         
     def genererMenu(self):
         barreMenu = tk.Menu(self)
@@ -72,16 +80,17 @@ class Application(tk.Tk):
         
     def dessiner(self, listeCases):
         if listeCases:
-            self._taille_width, self._taille_height = self._controleur.calculerTaillesCases(self.getWidth(), self.getHeight())
+            self._taille_height = self._controleur.calculerTaillesCases(self.getHeight())
             for case in listeCases:
                 self.creerRectangle(case)
             
     def creerRectangle(self, case):
-        self._canvas.create_rectangle(case.getX() * self._taille_width, case.getY() * self._taille_height,
-             (case.getX()+1) * self._taille_width, (case.getY()+1) * self._taille_height, fill=case.getCouleur())
+        self._canvas.create_rectangle(case.getX() * self._taille_height, case.getY() * self._taille_height,
+             (case.getX()+1) * self._taille_height, (case.getY()+1) * self._taille_height, fill=case.getCouleur())
         
     def updateTailleCanvas(self, _):
-        self._canvas.configure(width = self.winfo_width(), height = self.winfo_height())
+        self._canvas.configure(width = self.winfo_height(), height = self.winfo_height())
+        self._frame.config(width = self.getWidth() - self.getHeight(), height = self.getHeight())
         if self._canvasFinPartie:
             self._canvasFinPartie.configure(width = self.winfo_width(), height = self.winfo_height() / 4)
             self._canvasFinPartie.place(x=0,y=(self.winfo_height() - self.winfo_height() / 4) / 2)
@@ -103,7 +112,7 @@ class Application(tk.Tk):
         self._partie = partie
         
     def getWidthCase(self):
-        return self._taille_width
+        return self._taille_height
     
     def getHeightCase(self):
         return self._taille_height

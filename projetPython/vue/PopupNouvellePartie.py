@@ -9,6 +9,7 @@ class PopupNouvellePartie(object):
 
     def __init__(self, controleur):
         self._fenetre = tk.Toplevel()
+        self._fenetre.resizable(width=False, height=False)
         self._controleur = controleur
         self._fenetre.title('Nouvelle Partie')
         self._message = "Choix du mode de jeu"
