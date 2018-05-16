@@ -13,6 +13,9 @@ class Partie():
     
     def getScore(self):
         return self._score
+    
+    def getTailleGrille(self):
+        return len(self._grille)
 
     def getScorePotentiel(self):
         return self._scorePotentiel

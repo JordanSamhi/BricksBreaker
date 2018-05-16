@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 from vue.PopupNouvellePartie import PopupNouvellePartie
-from controleur.Controleur import Controleur
+from controleur.Outils import Outils
+from controleur.ActionsCases import ActionCases
 
 class Application(tk.Tk):
     def __init__(self):
@@ -13,13 +14,25 @@ class Application(tk.Tk):
         self._canvasFinPartie = None
         self._partie = None
         self._score, self._scorePotentiel = None, None
-        self._controleur = Controleur(self)
+        self._outils = Outils(self)
+        self._actionCases = ActionCases(self)
         self.genererInterface()
 
     def genererInterface(self):
         self.genererMenu()
         self.genererCanevas()
         self.genererPanneauDroite()
+        
+    def genererMenu(self):
+        barreMenu = tk.Menu(self)
+        jeu = tk.Menu(barreMenu,tearoff = 0)
+        jeu.add_command(label="Nouveau", command = self.nouvellePartie)
+        jeu.add_command(label="Quitter", command = self.destroy)
+        barreMenu.add_cascade(label ="Jeu", menu=jeu)        
+        aPropos = tk.Menu(barreMenu, tearoff = 0)
+        aPropos.add_command(label="Numeros d'anonymat", command = self.affichageNumeroAnonymat)
+        barreMenu.add_cascade(label ="A Propos", menu=aPropos) 
+        self.config(menu=barreMenu)
         
     def genererCanevas(self):
         self._canvas = tk.Canvas(self, bd=0, highlightthickness=0, relief=tk.GROOVE, width = self.getWidthCanevas(), height = self.getHeightCanevas())
@@ -36,37 +49,27 @@ class Application(tk.Tk):
         tk.Label(self._frame, text="Score Potentiel", font='Helvetica 15 bold').pack()
         tk.Label(self._frame, textvariable=self._scorePotentiel, font='Helvetica 15 bold').pack()
         
-    def genererMenu(self):
-        barreMenu = tk.Menu(self)
-        jeu = tk.Menu(barreMenu,tearoff = 0)
-        jeu.add_command(label="Nouveau", command = self.nouvellePartie)
-        jeu.add_command(label="Quitter", command = self.destroy)
-        barreMenu.add_cascade(label ="Jeu", menu=jeu)        
-        aPropos = tk.Menu(barreMenu, tearoff = 0)
-        aPropos.add_command(label="Numeros d'anonymat", command = self.affichageNumeroAnonymat)
-        barreMenu.add_cascade(label ="A Propos", menu=aPropos) 
-        self.config(menu=barreMenu)
-        
     def affichageNumeroAnonymat(self):
         messagebox.showinfo("Numeros Anonymat", "17820006\n17820034")
         
     def nouvellePartie(self):
-        self.desactiverEvenements()
-        if self._canvasFinPartie:
-            self._canvasFinPartie.destroy()
-            self._canvasFinPartie = None
-        popup = PopupNouvellePartie(self._controleur)
+        oldPartie = self._partie
+        popup = PopupNouvellePartie(self)
         self.wait_window(popup.getToplevel())
-        if self._score:
-            self._score.set(0)
-            self._scorePotentiel.set(0)
-        else:
-            self.genererScore()
-        self.genererEvenements()
-        self.dessiner(self._partie.getGrilleEnListe())
-        self.gererFinPartie()
+        if self._partie and self._partie != oldPartie:
+            if self._canvasFinPartie:
+                self._canvasFinPartie.destroy()
+                self._canvasFinPartie = None
+            if self._score:
+                self._score.set(0)
+                self._scorePotentiel.set(0)
+            else:
+                self.genererScore()
+            self.activerEvenements()
+            self.dessiner(self._partie.getGrilleEnListe())
+            self.gererFinPartie()
        
-    def genererEvenements(self):
+    def activerEvenements(self):
         self.bind("<Configure>", self.updateTailleCanvas)
         self._canvas.bind("<Motion>", self.surbrillanceCases)
         self._canvas.bind("<Leave>", self.desactiverSurbrillance)
@@ -78,18 +81,19 @@ class Application(tk.Tk):
         self._canvas.unbind("<Leave>")
         
     def surbrillanceCases(self, event):
-        self._controleur.surbrillanceCases(event)
+        self._actionCases.surbrillanceCases(event)
         
     def desactiverSurbrillance(self, _):
-        self._controleur.desactiverSurbrillance()
+        self._actionCases.desactiverSurbrillance()
             
     def detruireCases(self, _):
-        self._controleur.detruireCases()
+        self._actionCases.detruireCases()
         self.gererFinPartie()
     
     def gererFinPartie(self):
-        if self._controleur.isPartieFinie():
+        if self._outils.isPartieFinie(self._partie):
             self.afficherMessageFinPartie()
+            self.desactiverEvenements()
     
     def afficherMessageFinPartie(self):
         self._canvasFinPartie = tk.Canvas(self._canvas, width=self.getWidthCanevas(), height=self.getHeightCanevas()/4, background="navajo white")
@@ -99,8 +103,8 @@ class Application(tk.Tk):
         self._canvasFinPartie.place(x=0, y=(self.getHeightCanevas() - self.getHeightCanevas()/4) / 2)
         
     def dessiner(self, listeCases):
-        if listeCases:
-            self._taille_height, self._taille_width = self._controleur.calculerTaillesCases(self.getHeightCanevas(), self.getWidthCanevas())
+        if listeCases and len(listeCases) > 0:
+            self._taille_height, self._taille_width = self._outils.calculerTaillesCases(self.getHeightCanevas(), self.getWidthCanevas(), self._partie.getTailleGrille())
             for case in listeCases:
                 self.creerRectangle(case)
             
@@ -112,8 +116,8 @@ class Application(tk.Tk):
         self._canvas.configure(width = self.getWidthCanevas(), height = self.getHeightCanevas())
         self._frame.config(width = self.getWidthFrame(), height = self.getHeightFrame())
         if self._canvasFinPartie:
-            self._canvasFinPartie.configure(width = self.winfo_width(), height = self.winfo_height() / 4)
-            self._canvasFinPartie.place(x=0,y=(self.winfo_height() - self.winfo_height() / 4) / 2)
+            self._canvasFinPartie.configure(width=self.getWidthCanevas(), height=self.getHeightCanevas()/4)
+            self._canvasFinPartie.place(x=0, y=(self.getHeightCanevas() - self.getHeightCanevas()/4) / 2)
         self.dessiner(self._partie.getGrilleEnListe())
             
     def update(self):

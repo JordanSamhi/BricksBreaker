@@ -1,61 +1,18 @@
-'''
-    Classe qui fait l'interface entre la vue et le modele
-'''
+from controleur.generateurs.GenerateurSemblables import GenerateurSemblables
 from modele.Case import Case
-import random as r
-from modele.Partie import Partie
+from controleur.Outils import Outils
 
-class Controleur():
-    def __init__(self, application):
-        self._application = application
+class ActionCases():
+    def __init__(self, app):
+        self._application = app
+        self._generateurSemblables = GenerateurSemblables(app)
         self._semblables = []
         self._tailleGrille = 0
+        self._outils = Outils(app)
         self.LIMITE_NOMBRE_CASES = 3
     
-    def genererGrille(self, taille, listeCouleurs):
-        '''
-            On melange sinon a la fin les cases ont la meme couleur
-            car c'est ce qu'il reste (shuffle)
-        '''
-        grille = [[None for _ in range(taille)] for _ in range(taille)]
-        '''La pile va'''
-        listeDeCoordonnees = []
-        for i in range(taille):
-            for j in range(taille):
-                listeDeCoordonnees.append((i,j))
-        r.shuffle(listeDeCoordonnees)
-        for elt in listeDeCoordonnees:
-            grille[elt[0]][elt[1]] = Case(elt[1], elt[0], listeCouleurs.getUneCouleur(), grille)
-        return grille
-                
-    def genererPartie(self, taille, listeCouleurs):
-        grille = self.genererGrille(taille, listeCouleurs)
-        self._application.setPartie(Partie(grille))
-        self._tailleGrille = taille
-        
-    def calculerTaillesCases(self, height, width):
-        return (height / self._tailleGrille),(width / self._tailleGrille)
-                
-    def getSemblablesCase(self, case, voisinsVisites):
-        voisins = [v for v in case.getVoisins() if v is not None and v not in voisinsVisites and v.getCouleur() == case.getCouleur()]
-        voisinsVisites = voisinsVisites + voisins
-        for v in voisins:
-            if v != case:
-                pass
-                voisinsVisites = self.getSemblablesCase(v, voisinsVisites)
-        return voisinsVisites
-    
-    def desactiverSurbrillance(self):
-        for case in self._semblables:
-            if not case.estDetruite():
-                case.couleurParDefaut()
-        self._application.getPartie().setCasesModifiees(self._semblables)
-        self._application.getPartie().setScorePotentiel(0)
-        self._application.update()
-        '''re-initialisation de la liste des semblable'''
-        self._semblables = []
-            
     def surbrillanceCases(self, event):
+        self._tailleGrille = self._application.getPartie().getTailleGrille()
         x = int(event.x/self._application.getWidthCase())
         y = int(event.y/self._application.getHeightCase())
         caseActuelle = self._application.getPartie().getGrille()[y][x]
@@ -71,7 +28,7 @@ class Controleur():
             if caseActuelle not in self._semblables:
                 self.desactiverSurbrillance()
                 ''' On recupere les nouveaux semblables '''
-                self._semblables = self.getSemblablesCase(caseActuelle, [caseActuelle])
+                self._semblables = self._generateurSemblables.generer(caseActuelle, [caseActuelle])
                 ''' Si il y en a au moins 3, on gere surbrillance '''
                 if len(self._semblables) >= self.LIMITE_NOMBRE_CASES:
                     for case in self._semblables:
@@ -82,21 +39,23 @@ class Controleur():
         else:
             self.desactiverSurbrillance()
             
-    def isPartieFinie(self):
-        for case in self._application.getPartie().getGrilleEnListe():
+    def desactiverSurbrillance(self):
+        for case in self._semblables:
             if not case.estDetruite():
-                semblables = self.getSemblablesCase(case, [case])
-                if len(semblables) >= self.LIMITE_NOMBRE_CASES:
-                    return False
-        return True
-    
+                case.couleurParDefaut()
+        self._application.getPartie().setCasesModifiees(self._semblables)
+        self._application.getPartie().setScorePotentiel(0)
+        self._application.update()
+        '''re-initialisation de la liste des semblable'''
+        self._semblables = []
+        
     def detruireCases(self):
-        if len(self._semblables) >= self.LIMITE_NOMBRE_CASES:
+        if len(self._semblables) >= self.LIMITE_NOMBRE_CASES and not self._outils.semblablesSontDetruits(self._semblables):
             for case in self._semblables:
                 case.detruire()
             self._application.getPartie().ajouerScore(len(self._semblables))
-            self.gravite()  
-        
+            self.gravite()
+            
     def gravite(self):
         ''' Recuperation des colonnes concernees '''
         listeColonnes = []
