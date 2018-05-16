@@ -10,51 +10,62 @@ class ActionCases():
         self._tailleGrille = 0
         self._outils = Outils(app)
         self.LIMITE_NOMBRE_CASES = 3
+        self._deuxJoueurs = False
     
-    def surbrillanceCases(self, event):
-        self._tailleGrille = self._application.getPartie().getTailleGrille()
-        x = int(event.x/self._application.getWidthCase())
-        y = int(event.y/self._application.getHeightCase())
-        caseActuelle = self._application.getPartie().getGrille()[y][x]
-        '''
-            Si case pas morte, on gere surbrillance
-            Si case morte (case grise) on fait rien
-        '''
-        if not caseActuelle.estDetruite():
-            ''' 
-                Si on quitte les semblables on remet couleur par defaut
-                Sinon on fait rien
-            '''
-            if caseActuelle not in self._semblables:
-                self.desactiverSurbrillance()
-                ''' On recupere les nouveaux semblables '''
-                self._semblables = self._generateurSemblables.generer(caseActuelle, [caseActuelle])
-                ''' Si il y en a au moins 3, on gere surbrillance '''
-                if len(self._semblables) >= self.LIMITE_NOMBRE_CASES:
-                    for case in self._semblables:
-                        case.surbrillance()
-                        self._application.getPartie().setScorePotentiel(len(self._semblables))
-                self._application.getPartie().setCasesModifiees(self._semblables)
-                self._application.update()
-        else:
-            self.desactiverSurbrillance()
-            
-    def desactiverSurbrillance(self):
-        for case in self._semblables:
-            if not case.estDetruite():
-                case.couleurParDefaut()
-        self._application.getPartie().setCasesModifiees(self._semblables)
-        self._application.getPartie().setScorePotentiel(0)
-        self._application.update()
-        '''re-initialisation de la liste des semblable'''
+    def resetSemblables(self):
         self._semblables = []
         
-    def detruireCases(self):
-        if len(self._semblables) >= self.LIMITE_NOMBRE_CASES and not self._outils.semblablesSontDetruits(self._semblables):
+    def setPartieDeuxJoueurs(self):
+        self._deuxJoueurs = True
+    
+    def surbrillanceCases(self, event):
+        if not self._deuxJoueurs or (self._deuxJoueurs and self._application.getPartie().getMoi().getTour()):
+            self._tailleGrille = self._application.getPartie().getTailleGrille()
+            x = int(event.x/self._application.getWidthCase())
+            y = int(event.y/self._application.getHeightCase())
+            caseActuelle = self._application.getPartie().getGrille()[y][x]
+            '''
+                Si case pas morte, on gere surbrillance
+                Si case morte (case grise) on fait rien
+            '''
+            if not caseActuelle.estDetruite():
+                ''' 
+                    Si on quitte les semblables on remet couleur par defaut
+                    Sinon on fait rien
+                '''
+                if caseActuelle not in self._semblables:
+                    self.desactiverSurbrillance()
+                    ''' On recupere les nouveaux semblables '''
+                    self._semblables = self._generateurSemblables.generer(caseActuelle, [caseActuelle])
+                    ''' Si il y en a au moins 3, on gere surbrillance '''
+                    if len(self._semblables) >= self.LIMITE_NOMBRE_CASES:
+                        for case in self._semblables:
+                            case.surbrillance()
+                            self._application.getPartie().setScorePotentiel(len(self._semblables))
+                    self._application.getPartie().setCasesModifiees(self._semblables)
+                    self._application.update()
+            else:
+                self.desactiverSurbrillance()
+            
+    def desactiverSurbrillance(self):
+        if not self._deuxJoueurs or (self._deuxJoueurs and self._application.getPartie().getMoi().getTour()):
             for case in self._semblables:
-                case.detruire()
-            self._application.getPartie().ajouerScore(len(self._semblables))
-            self.gravite()
+                if not case.estDetruite():
+                    case.couleurParDefaut()
+            self._application.getPartie().setCasesModifiees(self._semblables)
+            self._application.getPartie().setScorePotentiel(0)
+            self._application.update()
+            '''re-initialisation de la liste des semblable'''
+            self._semblables = []
+        
+    def detruireCases(self):
+        if not self._deuxJoueurs or (self._deuxJoueurs and self._application.getPartie().getMoi().getTour()):
+            self._application.getPartie().getMoi().setTour(False)
+            if len(self._semblables) >= self.LIMITE_NOMBRE_CASES and not self._outils.semblablesSontDetruits(self._semblables):
+                for case in self._semblables:
+                    case.detruire()
+                self._application.getPartie().ajouerScore(len(self._semblables))
+                self.gravite()
             
     def gravite(self):
         ''' Recuperation des colonnes concernees '''

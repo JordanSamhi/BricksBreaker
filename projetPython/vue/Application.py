@@ -3,6 +3,9 @@ from tkinter import messagebox
 from vue.PopupNouvellePartie import PopupNouvellePartie
 from controleur.Outils import Outils
 from controleur.ActionsCases import ActionCases
+from controleur.AgentReseau import AgentReseau
+from vue.PopupAttenteClient import PopupAttenteClient
+import time
 
 class Application(tk.Tk):
     def __init__(self):
@@ -16,7 +19,14 @@ class Application(tk.Tk):
         self._score, self._scorePotentiel = None, None
         self._outils = Outils(self)
         self._actionCases = ActionCases(self)
+        self._agentReseau = None
+        self.protocol("WM_DELETE_WINDOW", self.deconnecterAgent)
         self.genererInterface()
+        
+    def deconnecterAgent(self):
+        if self._agentReseau:
+            self._agentReseau.stop()
+        self.destroy()
 
     def genererInterface(self):
         self.genererMenu()
@@ -26,7 +36,9 @@ class Application(tk.Tk):
     def genererMenu(self):
         barreMenu = tk.Menu(self)
         jeu = tk.Menu(barreMenu,tearoff = 0)
-        jeu.add_command(label="Nouveau", command = self.nouvellePartie)
+        jeu.add_command(label="Nouvelle partie 1 joueur", command = self.nouvellePartieUnJoueur)
+        jeu.add_command(label="Creer serveur 2 joueurs", command = self.attenteSecondJoueur)
+        jeu.add_command(label="Connexion a un autre joueur", command = self.connexionAutreJoueur)
         jeu.add_command(label="Quitter", command = self.destroy)
         barreMenu.add_cascade(label ="Jeu", menu=jeu)        
         aPropos = tk.Menu(barreMenu, tearoff = 0)
@@ -52,7 +64,7 @@ class Application(tk.Tk):
     def affichageNumeroAnonymat(self):
         messagebox.showinfo("Numeros Anonymat", "17820006\n17820034")
         
-    def nouvellePartie(self):
+    def nouvellePartieUnJoueur(self):
         oldPartie = self._partie
         popup = PopupNouvellePartie(self)
         self.wait_window(popup.getToplevel())
@@ -68,7 +80,51 @@ class Application(tk.Tk):
             self.activerEvenements()
             self.dessiner(self._partie.getGrilleEnListe())
             self.gererFinPartie()
-       
+            
+    def attenteSecondJoueur(self):
+        if not self._agentReseau:
+            self._popupAttenteClient = PopupAttenteClient()
+            self._agentReseau = AgentReseau(self, "AgentReseau")
+        if self._agentReseau.echo() != 1:
+            if not self._popupAttenteClient.estOuverte():
+                self._agentReseau.stop()
+                self._agentReseau = None
+                return
+            print("on est pas 2")
+            self.after(1000, self.attenteSecondJoueur)
+        else:
+            self._popupAttenteClient.fermerFenetre()
+            self._actionCases.setPartieDeuxJoueurs()
+            print("on est 2")
+            self.nouvellePartieUnJoueur()
+            self._agentReseau.envoyerGrille(self._partie.getGrilleEnListe())
+
+    def connexionAutreJoueur(self):
+        if not self._agentReseau:
+            self._popupAttenteClient = PopupAttenteClient()
+            self._agentReseau = AgentReseau(self, "AgentReseau")
+        if self._agentReseau.echo() != 1:
+            if not self._popupAttenteClient.estOuverte():
+                self._agentReseau.stop()
+                self._agentReseau = None
+                return
+            print("on est pas 2")
+            self.after(1000, self.connexionAutreJoueur)
+        else:
+            self._popupAttenteClient.fermerFenetre()
+            print("on est 2")
+            while not self._partie:
+                time.sleep(1)
+            self._actionCases.setPartieDeuxJoueurs()
+            self._partie.getMoi().setTour(False)
+            self._partie.getAdversaire().setTour(True)
+            self.genererScore()
+            self._score.set(0)
+            self._scorePotentiel.set(0)
+            self.activerEvenements()
+            self.dessiner(self._partie.getGrilleEnListe())
+            self.gererFinPartie()
+    
     def activerEvenements(self):
         self.bind("<Configure>", self.updateTailleCanvas)
         self._canvas.bind("<Motion>", self.surbrillanceCases)
@@ -94,6 +150,7 @@ class Application(tk.Tk):
         if self._outils.isPartieFinie(self._partie):
             self.afficherMessageFinPartie()
             self.desactiverEvenements()
+            self._actionCases.resetSemblables()
     
     def afficherMessageFinPartie(self):
         self._canvasFinPartie = tk.Canvas(self._canvas, width=self.getWidthCanevas(), height=self.getHeightCanevas()/4, background="navajo white")
