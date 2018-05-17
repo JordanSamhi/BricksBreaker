@@ -5,7 +5,7 @@ from controleur.Outils import Outils
 from controleur.ActionsCases import ActionCases
 from controleur.AgentReseau import AgentReseau
 from vue.PopupAttenteClient import PopupAttenteClient
-import time
+import time, socket
 
 class Application(tk.Tk):
     def __init__(self):
@@ -16,7 +16,10 @@ class Application(tk.Tk):
         self._frame = None
         self._canvasFinPartie = None
         self._partie = None
-        self._score, self._scorePotentiel = None, None
+        self._score, self._scorePotentiel, self._scoreAdversaire = None, None, None
+        self._monTour = None
+        self._temps = None
+        self._delai = 5
         self._outils = Outils(self)
         self._actionCases = ActionCases(self)
         self._agentReseau = None
@@ -36,7 +39,7 @@ class Application(tk.Tk):
     def genererMenu(self):
         barreMenu = tk.Menu(self)
         jeu = tk.Menu(barreMenu,tearoff = 0)
-        jeu.add_command(label="Nouvelle partie 1 joueur", command = self.nouvellePartieUnJoueur)
+        jeu.add_command(label="Nouvelle partie 1 joueur", command = self.nouvellePartie)
         jeu.add_command(label="Creer serveur 2 joueurs", command = self.attenteSecondJoueur)
         jeu.add_command(label="Connexion a un autre joueur", command = self.connexionAutreJoueur)
         jeu.add_command(label="Quitter", command = self.destroy)
@@ -54,17 +57,50 @@ class Application(tk.Tk):
         self._frame = tk.Frame(self, borderwidth=2, relief=tk.GROOVE, width = self.getWidthFrame(), height = self.getHeightFrame())
         self._frame.grid(row=0, column=1)
         
-    def genererScore(self):
+    def genererScoreUnJoueur(self):
         self._score, self._scorePotentiel = tk.IntVar(), tk.IntVar()
         tk.Label(self._frame, text="Score", font='Helvetica 15 bold').pack()
         tk.Label(self._frame, textvariable=self._score, font='Helvetica 15 bold').pack()
         tk.Label(self._frame, text="Score Potentiel", font='Helvetica 15 bold').pack()
         tk.Label(self._frame, textvariable=self._scorePotentiel, font='Helvetica 15 bold').pack()
+    
+    def genererScoreDeuxJoueur(self):
+        self._monTour = tk.StringVar()
+        self._temps = tk.IntVar()
+        self._temps.set(self._delai)
+        self._score, self._scorePotentiel, self._scoreAdversaire = tk.IntVar(), tk.IntVar(), tk.IntVar()
+        if self._partie.getMoi().getTour():
+            self._monTour.set("Mon tour")
+        else:
+            self._monTour.set("Pas mon tour")
+        tk.Label(self._frame, textvariable=str(self._temps), font='Helvetica 15 bold').pack()
+        tk.Label(self._frame, textvariable=self._monTour, font='Helvetica 15 bold').pack()
+        tk.Label(self._frame, text="Score Moi", font='Helvetica 15 bold').pack()
+        tk.Label(self._frame, textvariable=self._score, font='Helvetica 15 bold').pack()
+        tk.Label(self._frame, text="Score Adv.", font='Helvetica 15 bold').pack()
+        tk.Label(self._frame, textvariable=self._scoreAdversaire, font='Helvetica 15 bold').pack()
+        tk.Label(self._frame, text="Score Potentiel", font='Helvetica 15 bold').pack()
+        tk.Label(self._frame, textvariable=self._scorePotentiel, font='Helvetica 15 bold').pack()
+        self._casesAMoi = tk.Frame(self._frame)
+        self._casesAdversaire = tk.Frame(self._frame)
+        tk.Label(self._casesAMoi, text="Mes cases", font='Helvetica 15 bold').pack()
+        tk.Label(self._casesAdversaire, text="Cases adv.", font='Helvetica 15 bold').pack()
+        self._casesAMoi.pack()
+        self._casesAdversaire.pack()
+        self.miseAJourTemps()
+        
+    def miseAJourTemps(self):
+        if self._temps.get() > 0:
+            if self._partie.getMoi().getTour():
+                self._temps.set(self._temps.get() - 1)
+                self.after(1000, self.miseAJourTemps)
+        else:
+            self._agentReseau.changerTour()
         
     def affichageNumeroAnonymat(self):
         messagebox.showinfo("Numeros Anonymat", "17820006\n17820034")
         
-    def nouvellePartieUnJoueur(self):
+    def nouvellePartie(self):
         oldPartie = self._partie
         popup = PopupNouvellePartie(self)
         self.wait_window(popup.getToplevel())
@@ -75,29 +111,44 @@ class Application(tk.Tk):
             if self._score:
                 self._score.set(0)
                 self._scorePotentiel.set(0)
+                if self._scoreAdversaire:
+                    self._scoreAdversaire.set(0)
+            elif self._agentReseau:
+                self.genererScoreDeuxJoueur()
             else:
-                self.genererScore()
+                self.genererScoreUnJoueur()
             self.activerEvenements()
             self.dessiner(self._partie.getGrilleEnListe())
-            self.gererFinPartie()
+            if self._agentReseau:
+                self.gererFinPartieDeuxJoueurs()
+            else:
+                self.gererFinPartie()
             
     def attenteSecondJoueur(self):
-        if not self._agentReseau:
-            self._popupAttenteClient = PopupAttenteClient()
-            self._agentReseau = AgentReseau(self, "AgentReseau")
-        if self._agentReseau.echo() != 1:
-            if not self._popupAttenteClient.estOuverte():
-                self._agentReseau.stop()
-                self._agentReseau = None
-                return
-            print("on est pas 2")
-            self.after(1000, self.attenteSecondJoueur)
-        else:
-            self._popupAttenteClient.fermerFenetre()
-            self._actionCases.setPartieDeuxJoueurs()
-            print("on est 2")
-            self.nouvellePartieUnJoueur()
-            self._agentReseau.envoyerGrille(self._partie.getGrilleEnListe())
+        def attenteJoueur():
+            if not self._agentReseau:
+                self._popupAttenteClient = PopupAttenteClient()
+                self._agentReseau = AgentReseau(self, "AgentReseau")
+            if self._agentReseau.echo() != 1:
+                if not self._popupAttenteClient.estOuverte():
+                    self._agentReseau.stop()
+                    self._agentReseau = None
+                    return
+                self.after(1000, attenteJoueur)
+            else:
+                ''' joueur connecte '''
+                self._popupAttenteClient.fermerFenetre()
+                self._actionCases.setPartieDeuxJoueurs()
+                self.nouvellePartie()
+                self._agentReseau.envoyerGrille(self._partie.getGrilleEnListe())
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.bind(("0.0.0.0", 2010))
+            sock.close()
+            ''' Port dispo '''
+            attenteJoueur()
+        except:
+            messagebox.showerror("Erreur", "L'autre joueur attend deja")
 
     def connexionAutreJoueur(self):
         if not self._agentReseau:
@@ -108,23 +159,21 @@ class Application(tk.Tk):
                 self._agentReseau.stop()
                 self._agentReseau = None
                 return
-            print("on est pas 2")
             self.after(1000, self.connexionAutreJoueur)
         else:
             self._popupAttenteClient.fermerFenetre()
-            print("on est 2")
             while not self._partie:
                 time.sleep(1)
             self._actionCases.setPartieDeuxJoueurs()
             self._partie.getMoi().setTour(False)
-            self._partie.getAdversaire().setTour(True)
-            self.genererScore()
+            self.genererScoreDeuxJoueur()
             self._score.set(0)
             self._scorePotentiel.set(0)
+            self._scoreAdversaire.set(0)
             self.activerEvenements()
             self.dessiner(self._partie.getGrilleEnListe())
-            self.gererFinPartie()
-    
+            self.gererFinPartieDeuxJoueurs()
+            
     def activerEvenements(self):
         self.bind("<Configure>", self.updateTailleCanvas)
         self._canvas.bind("<Motion>", self.surbrillanceCases)
@@ -144,18 +193,43 @@ class Application(tk.Tk):
             
     def detruireCases(self, _):
         self._actionCases.detruireCases()
-        self.gererFinPartie()
+        if not self._agentReseau:
+            self.gererFinPartie()
     
     def gererFinPartie(self):
         if self._outils.isPartieFinie(self._partie):
             self.afficherMessageFinPartie()
             self.desactiverEvenements()
             self._actionCases.resetSemblables()
+            
+    def gererFinPartieDeuxJoueurs(self):
+        if self._outils.isPartieFinieDeuxJoueurs(self._partie):
+            self.afficherMessageFinPartieDeuxJoueurs()
+            self.desactiverEvenements()
+            self._actionCases.resetSemblables()
+            self._agentReseau.envoyerFinPartie()
     
     def afficherMessageFinPartie(self):
         self._canvasFinPartie = tk.Canvas(self._canvas, width=self.getWidthCanevas(), height=self.getHeightCanevas()/4, background="navajo white")
         self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/4, text="Partie terminee !", font="Arial 16 italic", fill="blue")
         self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/2, text="Score : "+str(self._score.get()), font="Arial 16 italic", fill="blue")
+        self._canvasFinPartie.pack()
+        self._canvasFinPartie.place(x=0, y=(self.getHeightCanevas() - self.getHeightCanevas()/4) / 2)
+        
+    def afficherMessageFinPartieDeuxJoueurs(self):
+        self._canvasFinPartie = tk.Canvas(self._canvas, width=self.getWidthCanevas(), height=self.getHeightCanevas()/4, background="navajo white")
+        self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/5, text="Partie terminee !", font="Arial 16 italic", fill="blue")
+        if self._score.get() > self._scoreAdversaire.get():
+            text = "Vous avez gagne !"
+            score = self._score.get()
+        elif self._score.get() < self._scoreAdversaire.get():
+            text = "Vous avez perdu !"
+            score = self._scoreAdversaire.get()
+        else:
+            text = "Egalite !"
+            score = self._score.get()
+        self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/2, text=text, font="Arial 16 italic", fill="blue")
+        self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/1.2, text="Score : "+str(score), font="Arial 16 italic", fill="blue")
         self._canvasFinPartie.pack()
         self._canvasFinPartie.place(x=0, y=(self.getHeightCanevas() - self.getHeightCanevas()/4) / 2)
         
@@ -179,8 +253,10 @@ class Application(tk.Tk):
             
     def update(self):
         self.dessiner(self._partie.getCasesModifiees())
-        self._score.set(self._partie.getScore())
+        self._score.set(self._partie.getMoi().getScore())
         self._scorePotentiel.set(self._partie.getScorePotentiel())
+        if self._scoreAdversaire:
+            self._scoreAdversaire.set(self._partie.getAdversaire().getScore())
         
     def getWidth(self):
         return self.winfo_width()
@@ -214,6 +290,29 @@ class Application(tk.Tk):
     def getWidthFrame(self):
         return self.getWidth() * 0.3
     
+    def getAgentReseau(self):
+        return self._agentReseau
+    
+    def getActionCases(self):
+        return self._actionCases
+    
+    def getFrame(self):
+        return self._frame
+    
+    def ajouterCouleurUtilisateur(self, couleur):
+        tk.Label(self._casesAMoi, text="          ", bg=couleur).pack()
+        
+    def ajouterCouleurAdversaire(self, couleur):
+        tk.Label(self._casesAdversaire, text="          ", bg=couleur).pack()
+    
+    def setPasMonTour(self):
+        self._monTour.set("Pas mon tour")
+        
+    def setMonTour(self):
+        self._monTour.set("Mon tour")
+        
+    def resetTimer(self):
+        self._temps.set(self._delai)
 if __name__ == "__main__":
     app = Application()
     app.mainloop()

@@ -16,6 +16,9 @@ class Partie():
     
     def getAdversaire(self):
         return self._adversaire
+    
+    def getNombreCouleurs(self):
+        return int(len(self._grille) / 2.5)
         
     def getGrille(self):
         return self._grille

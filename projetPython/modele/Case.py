@@ -14,6 +14,11 @@ class Case():
     def getCouleur(self):
         return self._couleur
     
+    def getCouleurOriginale(self):
+        if self._couleur[-1] == "3":
+            return self._couleur[:-1]+"2"
+        return self._couleur
+    
     def getX(self):
         return self._x
     

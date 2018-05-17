@@ -7,7 +7,6 @@ class ActionCases():
         self._application = app
         self._generateurSemblables = GenerateurSemblables(app)
         self._semblables = []
-        self._tailleGrille = 0
         self._outils = Outils(app)
         self.LIMITE_NOMBRE_CASES = 3
         self._deuxJoueurs = False
@@ -17,10 +16,14 @@ class ActionCases():
         
     def setPartieDeuxJoueurs(self):
         self._deuxJoueurs = True
+        
+    def getCouleurSemblables(self):
+        if len(self._semblables) > 0:
+            return self._semblables[0].getCouleurOriginale()
+        return None
     
     def surbrillanceCases(self, event):
         if not self._deuxJoueurs or (self._deuxJoueurs and self._application.getPartie().getMoi().getTour()):
-            self._tailleGrille = self._application.getPartie().getTailleGrille()
             x = int(event.x/self._application.getWidthCase())
             y = int(event.y/self._application.getHeightCase())
             caseActuelle = self._application.getPartie().getGrille()[y][x]
@@ -59,13 +62,39 @@ class ActionCases():
             self._semblables = []
         
     def detruireCases(self):
+        couleur = self.getCouleurSemblables()
         if not self._deuxJoueurs or (self._deuxJoueurs and self._application.getPartie().getMoi().getTour()):
-            self._application.getPartie().getMoi().setTour(False)
             if len(self._semblables) >= self.LIMITE_NOMBRE_CASES and not self._outils.semblablesSontDetruits(self._semblables):
-                for case in self._semblables:
-                    case.detruire()
-                self._application.getPartie().ajouerScore(len(self._semblables))
-                self.gravite()
+                ''' Gestion appropriation couleurs '''
+                if (not self._deuxJoueurs 
+                    or (couleur not in self._application.getPartie().getAdversaire().getCouleurs() 
+                    and couleur not in self._application.getPartie().getMoi().getCouleurs()
+                    and self._application.getPartie().getMoi().getNombreCouleurs() < self._application.getPartie().getNombreCouleurs() / 2)):
+                    self._application.getPartie().getMoi().ajouterCouleur(couleur)
+                    if self._deuxJoueurs:
+                        self._application.ajouterCouleurUtilisateur(couleur)
+                if couleur in self._application.getPartie().getMoi().getCouleurs():
+                    for case in self._semblables:
+                        case.detruire()
+                    if self._deuxJoueurs:
+                        self._application.getPartie().getMoi().setTour(False)
+                        self._application.setPasMonTour()
+                        self._application.getAgentReseau().envoyerCasesADetruire(self._semblables)
+                    self._application.getPartie().getMoi().ajouterScore(len(self._semblables))
+                    self.gravite()
+                    
+    def detruireCasesProvenantAdversaire(self, cases):
+        self._semblables = cases
+        couleur = self.getCouleurSemblables()
+        if not couleur in self._application.getPartie().getAdversaire().getCouleurs():
+            self._application.getPartie().getAdversaire().ajouterCouleur(couleur)
+            self._application.ajouterCouleurAdversaire(couleur)
+        self._application.getPartie().getAdversaire().ajouterScore(len(cases))
+        for case in self._semblables:
+            case.detruire()
+        self.gravite()
+        self._application.resetTimer()
+        self._application.miseAJourTemps()
             
     def gravite(self):
         ''' Recuperation des colonnes concernees '''
@@ -79,7 +108,7 @@ class ActionCases():
             nouveauBas = None
             casesDetruites = []
             casesADescendre = []
-            for i in range(self._tailleGrille - 1, -1, -1):
+            for i in range(self._application.getPartie().getTailleGrille() - 1, -1, -1):
                 ''' Debut traitement de chaque colonne '''
                 case =  self._application.getPartie().getGrille()[i][col]
                 '''
@@ -95,7 +124,7 @@ class ActionCases():
                     casesADescendre.append(case)
             ''' S'il n'y a pas de nouveau bas, alors on est tout en bas, le nouveau bas est "virtuel" en dessous du bas '''
             if not nouveauBas:
-                nouveauBas = Case(col, self._tailleGrille, None, None)
+                nouveauBas = Case(col, self._application.getPartie().getTailleGrille(), None, None)
             ''' On monte les cases detruites '''
             for i in range(len(casesDetruites)):
                 casesDetruites[i].setY(i)
@@ -119,8 +148,8 @@ class ActionCases():
             indiceDecalage = 0
             peutDecaler = False
             casesAModifier = []
-            ligneBasGrille = self._application.getPartie().getGrille()[self._tailleGrille - 1]            
-            for i in range(self._tailleGrille):
+            ligneBasGrille = self._application.getPartie().getGrille()[self._application.getPartie().getTailleGrille() - 1]            
+            for i in range(self._application.getPartie().getTailleGrille()):
                 case = ligneBasGrille[i]
                 ''' Si colonne vide '''
                 if case.estDetruite():
@@ -136,8 +165,8 @@ class ActionCases():
                 peutDecaler = True
             ''' Ici on opere le decalage '''
             if indiceDecalage != 0 and peutDecaler:
-                for col in range(case.getX(), self._tailleGrille):
-                    for i in range(self._tailleGrille):
+                for col in range(case.getX(), self._application.getPartie().getTailleGrille()):
+                    for i in range(self._application.getPartie().getTailleGrille()):
                         newCase = self._application.getPartie().getGrille()[i][col]
                         if not newCase.estDetruite():
                             oldCase = self._application.getPartie().getGrille()[i][col - indiceDecalage]
