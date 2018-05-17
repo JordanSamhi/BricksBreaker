@@ -67,7 +67,7 @@ class Application(tk.Tk):
     def genererScoreDeuxJoueur(self):
         self._monTour = tk.StringVar()
         self._temps = tk.IntVar()
-        self._temps.set(self._delai)
+        self._temps.set(self._delai) 
         self._score, self._scorePotentiel, self._scoreAdversaire = tk.IntVar(), tk.IntVar(), tk.IntVar()
         if self._partie.getMoi().getTour():
             self._monTour.set("Mon tour")
