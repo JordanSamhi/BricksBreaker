@@ -1,8 +1,8 @@
 from controleur.generateurs.Generateur import Generateur
 
 class GenerateurSemblables(Generateur):
-    def __init__(self, app):
-        Generateur.__init__(self, app)
+    def __init__(self, mode):
+        Generateur.__init__(self, mode)
         
     def generer(self, *args):
         case, voisinsVisites = args[0], args[1]

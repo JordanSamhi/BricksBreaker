@@ -3,12 +3,12 @@ from modele.couleurs.Liste4Couleurs import Liste4Couleurs
 from modele.couleurs.Liste8Couleurs import Liste8Couleurs
 from controleur.generateurs.GenerateurPartie import GenerateurPartie
 
-class PopupNouvellePartie():
-    def __init__(self, app):
+class PopupChoixTaille():
+    def __init__(self, mode):
         self._fenetre = tk.Toplevel()
         self._fenetre.grab_set()
         self._fenetre.resizable(width=False, height=False)
-        self._generateurPartie = GenerateurPartie(app)
+        self._generateurPartie = GenerateurPartie(mode)
         self._fenetre.title('Nouvelle Partie')
         self._message = "Choix du mode de jeu"
         tk.Label(self._fenetre, text=self._message).grid(row = 0, column = 0, columnspan = 2)

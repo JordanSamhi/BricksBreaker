@@ -7,9 +7,9 @@ class PopupAttenteClient():
         self._fenetre.resizable(width=False, height=False)
         self._fenetre.title('Attente client')
         self._message = "Attente d'un second joueur"
-        tk.Label(self._fenetre, text=self._message).grid(row = 0, column = 0, columnspan = 2)
+        tk.Label(self._fenetre, text=self._message).pack()
         self._fenetre.protocol("WM_DELETE_WINDOW", self.disableFermeture)
-        tk.Button(self._fenetre, text='Quitter', command=self.fermerFenetre).grid(row = 2, column = 0)
+        tk.Button(self._fenetre, text='Quitter', command=self.fermerFenetre).pack()
     
     def getToplevel(self):
         return self._fenetre

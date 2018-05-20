@@ -3,8 +3,8 @@ import random as r
 from modele.Case import Case
 
 class GenerateurGrille(Generateur):
-    def __init__(self, app):
-        Generateur.__init__(self, app)
+    def __init__(self, mode):
+        Generateur.__init__(self, mode)
         
     def generer(self, *args):
         taille, listeCouleurs = args[0], args[1]
