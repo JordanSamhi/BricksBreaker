@@ -142,15 +142,12 @@ class Application(tk.Tk):
         self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/5, text="Partie terminee !", font="Arial 16 italic", fill="blue")
         if self._score.get() > self._scoreAdversaire.get():
             text = "Vous avez gagne !"
-            score = self._score.get()
         elif self._score.get() < self._scoreAdversaire.get():
             text = "Vous avez perdu !"
-            score = self._scoreAdversaire.get()
         else:
             text = "Egalite !"
-            score = self._score.get()
         self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/2, text=text, font="Arial 16 italic", fill="blue")
-        self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/1.2, text="Score : "+str(score), font="Arial 16 italic", fill="blue")
+        self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/1.2, text="Votre score : "+str(self._mode.getJoueur().getScore()), font="Arial 16 italic", fill="blue")
         self._canvasFinPartie.pack()
         self._canvasFinPartie.place(x=0, y=(self.getHeightCanevas() - self.getHeightCanevas()/4) / 2)
         
