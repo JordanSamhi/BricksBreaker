@@ -3,7 +3,7 @@ from controleur.actionsCases.ActionsCases import ActionCases
 class ActionsCasesDeuxJoueurs(ActionCases):
     def __init__(self, mode, app):
         ActionCases.__init__(self, mode, app)
-    
+        
     def detruireCases(self):
         couleur = self.getCouleurSemblables()
         if self._mode.getJoueur().getTour():
@@ -18,6 +18,7 @@ class ActionsCasesDeuxJoueurs(ActionCases):
                     for case in self._semblables:
                         case.detruire()
                     self._mode.getJoueur().setTour(False)
+                    self._application.updateTour()
                     self._mode.getAgentReseau().envoyerCasesADetruire(self._semblables)
                     self._mode.getJoueur().ajouterScore(len(self._semblables))
                     self.gravite()

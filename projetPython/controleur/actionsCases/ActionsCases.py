@@ -61,11 +61,12 @@ class ActionCases():
         for case in self._semblables:
             if not case.estDetruite():
                 case.couleurParDefaut()
-        self._mode.getPartie().setCasesModifiees(self._semblables)
-        self._mode.getPartie().setScorePotentiel(0)
-        self.update()
-        '''re-initialisation de la liste des semblable'''
-        self.resetSemblables()
+        if self._mode.getPartie():
+            self._mode.getPartie().setCasesModifiees(self._semblables)
+            self._mode.getPartie().setScorePotentiel(0)
+            self.update()
+            '''re-initialisation de la liste des semblables'''
+            self.resetSemblables()
         
     def detruireCasesProvenantAdversaire(self, cases):
         self._semblables = cases

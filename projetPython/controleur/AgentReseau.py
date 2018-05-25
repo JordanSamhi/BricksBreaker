@@ -26,14 +26,14 @@ class AgentReseau(IvyServer):
     def changerTour(self):
         msg = "changementTour"
         self._mode.getJoueur().setTour(False)
-        self._mode.getApplication().updateDeuxJoueurs()
+        self._mode.getApplication().updateTour()
         self.send_msg(msg)
         
     def receptionChangementTour(self, _):
         self._mode.getJoueur().setTour(True)
         self._mode.getApplication().resetTimer()
         self._mode.getApplication().miseAJourTemps()
-        self._mode.getApplication().updateDeuxJoueurs()
+        self._mode.getApplication().updateTour()
     
     def envoyerFinPartie(self):
         msg = "finPartie"
@@ -41,6 +41,8 @@ class AgentReseau(IvyServer):
         
     def receptionFinPartie(self, _):
         self._mode.getApplication().afficherMessageFinPartieDeuxJoueurs()
+        self._mode.getApplication().desactiverEvenements()
+        self._mode.getActionsCases().resetSemblables()
         
     def envoyerGrille(self, grilleEnListe):
         msg = "grille="
@@ -75,6 +77,7 @@ class AgentReseau(IvyServer):
             x = int(case.split(",")[0])
             cases.append(self._mode.getPartie().getGrille()[y][x])
         self._mode.getJoueur().setTour(True)
+        self._mode.getApplication().updateTour()
         self._mode.getActionsCases().detruireCasesProvenantAdversaire(cases)
         self._mode.getApplication().resetTimer()
         self._mode.getApplication().miseAJourTemps()

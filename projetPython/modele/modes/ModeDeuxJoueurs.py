@@ -39,8 +39,9 @@ class ModeDeuxJoueurs(Mode):
                     if self._partie:
                         self._agentReseau.envoyerGrille(self._partie.getGrilleEnListe())
                         self._application.genererScoreDeuxJoueurs()
-                        self._application.dessiner(self._partie.getGrilleEnListe())
+                        self._application.initialiserGrille(self._partie.getGrilleEnListe())
                         self._application.updateDeuxJoueurs()
+                        self._application.updateTour()
                         self._application.activerEvenements()
                         self.gererFinPartie()
                 else:
@@ -55,8 +56,9 @@ class ModeDeuxJoueurs(Mode):
                         secondes += 1
                     if self._partie:
                         self._application.genererScoreDeuxJoueurs()
-                        self._application.dessiner(self._partie.getGrilleEnListe())
+                        self._application.initialiserGrille(self._partie.getGrilleEnListe())
                         self._application.updateDeuxJoueurs()
+                        self._application.updateTour()
         attenteClient(popup, compteur)
 
     def surbrillanceCases(self, event):

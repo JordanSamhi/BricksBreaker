@@ -10,7 +10,7 @@ class ModeUnJoueur(Mode):
         self._application.popUpChoixTaille()
         if self._partie:
             self._application.genererScoreUnJoueur()
-            self._application.dessiner(self._partie.getGrilleEnListe())
+            self._application.initialiserGrille(self._partie.getGrilleEnListe())
             self.gererFinPartie()
         
     def surbrillanceCases(self, event):

@@ -15,6 +15,8 @@ class Application(tk.Tk):
         self._framePanneauDroite = None
         self._canvasFinPartie = None
         self._mode = None
+        self._listeRectangles = None
+        self._timer = None
         self._score, self._scorePotentiel, self._scoreAdversaire = None, None, None
         self._tour, self._temps = None, None
         self.protocol("WM_DELETE_WINDOW", self.quitter)
@@ -112,9 +114,12 @@ class Application(tk.Tk):
         if self._temps.get() > 0:
             if self._mode.getJoueur().getTour():
                 self._temps.set(self._temps.get() - 1)
-                self.after(1000, self.miseAJourTemps)
+                self._timer = self.after(1000, self.miseAJourTemps)
         else:
             self._mode.changerTour()
+            
+    def detruireTimer(self):
+        self.after_cancel(self._timer)
         
     def affichageNumeroAnonymat(self):
         messagebox.showinfo("Numeros Anonymat", "17820006\n17820034")
@@ -138,7 +143,7 @@ class Application(tk.Tk):
         self._canvasFinPartie.place(x=0, y=(self.getHeightCanevas() - self.getHeightCanevas()/4) / 2)
 #         
     def afficherMessageFinPartieDeuxJoueurs(self):
-        self._canvasFinPartie = tk.Canvas(self._canvas, width=self.getWidthCanevas(), height=self.getHeightCanevas()/4, background="navajo white")
+        self._canvasFinPartie = tk.Canvas(self._canvas, width=self.getWidthCanevas()-10, height=self.getHeightCanevas()/4, background="navajo white")
         self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/5, text="Partie terminee !", font="Arial 16 italic", fill="blue")
         if self._score.get() > self._scoreAdversaire.get():
             text = "Vous avez gagne !"
@@ -150,16 +155,28 @@ class Application(tk.Tk):
         self._canvasFinPartie.create_text(self._canvasFinPartie.winfo_reqwidth()/2, self._canvasFinPartie.winfo_reqheight()/1.2, text="Votre score : "+str(self._mode.getJoueur().getScore()), font="Arial 16 italic", fill="blue")
         self._canvasFinPartie.pack()
         self._canvasFinPartie.place(x=0, y=(self.getHeightCanevas() - self.getHeightCanevas()/4) / 2)
+        self.detruireTimer()
+        self._mode.getAgentReseau().stop()
         
-    def dessiner(self, listeCases):
+    def redessinerCases(self, listeCases):
         if listeCases and len(listeCases) > 0:
             self._heightCases, self._widthCases = self.getHeightCanevas() / self._mode.getTailleGrille(), self.getWidthCanevas() / self._mode.getTailleGrille()
             for case in listeCases:
-                self.creerRectangle(case)
-            
+                if self._listeRectangles[case.getX()][case.getY()]:
+                    self._canvas.itemconfig(self._listeRectangles[case.getX()][case.getY()], fill=case.getCouleur())
+                    self._canvas.coords(self._listeRectangles[case.getX()][case.getY()], case.getX() * self.getWidthCase(), case.getY() * self.getHeightCase(), (case.getX()+1) * self.getWidthCase(), (case.getY()+1) * self.getHeightCase())
+                
+    def initialiserGrille(self, cases):
+        self._heightCases, self._widthCases = self.getHeightCanevas() / self._mode.getTailleGrille(), self.getWidthCanevas() / self._mode.getTailleGrille()
+        self._listeRectangles = [[None for _ in range(len(cases))] for _ in range(len(cases))]
+        for case in cases:
+            self._listeRectangles[case.getX()][case.getY()] = self._canvas.create_rectangle(case.getX() * self.getWidthCase(), case.getY() * self.getHeightCase(), 
+                                (case.getX()+1) * self.getWidthCase(), (case.getY()+1) * self.getHeightCase(), fill=case.getCouleur())
+                
     def creerRectangle(self, case):
         self._canvas.create_rectangle(case.getX() * self.getWidthCase(), case.getY() * self.getHeightCase(), (case.getX()+1) * self.getWidthCase(),
                                       (case.getY()+1) * self.getHeightCase(), fill=case.getCouleur())
+    
         
     def updateTailleCanvas(self, _):
         self._canvas.configure(width = self.getWidthCanevas(), height = self.getHeightCanevas())
@@ -168,21 +185,24 @@ class Application(tk.Tk):
             self._canvasFinPartie.configure(width=self.getWidthCanevas(), height=self.getHeightCanevas()/4)
             self._canvasFinPartie.place(x=0, y=(self.getHeightCanevas() - self.getHeightCanevas()/4) / 2)
         if self._mode.getPartie():
-            self.dessiner(self._mode.getPartie().getGrilleEnListe())
+            if self._listeRectangles:
+                self.redessinerCases(self._mode.getPartie().getGrilleEnListe())
             
     def update(self):
-        self.dessiner(self._mode.getPartie().getCasesModifiees())
+        self.redessinerCases(self._mode.getPartie().getCasesModifiees())
         self._score.set(self._mode.getJoueur().getScore())
         self._scorePotentiel.set(self._mode.getPartie().getScorePotentiel())
             
     def updateDeuxJoueurs(self):
         self.update()
         self._scoreAdversaire.set(self._mode.getAdversaire().getScore())
+        
+    def updateTour(self):
         if self._mode.getJoueur().getTour():
             self._tour.set("Mon tour")
         else:
             self._tour.set("Pas mon tour")
-        
+    
     def setMode(self, mode):
         self._mode = mode    
         
