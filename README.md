@@ -18,5 +18,10 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ### Screenshots
 
+One player :
+
 ![One player](https://github.com/dusby/BricksBreaker/blob/master/screenshots/onePlayer.png)
+
+Two players :
+
 ![Two players](https://github.com/dusby/BricksBreaker/blob/master/screenshots/twoPlayers.png)
